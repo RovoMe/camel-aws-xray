@@ -1,0 +1,22 @@
+# Generated Files #
+bin/
+target/
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# IDE Files #
+/.idea/
+.classpath
+.project
+.settings/
+*.swp
+*.iml
+atlassian-ide-plugin.xml
+src/main/resources/rebel.xml
+
+# Unencrypted passwords #
+*.properties
