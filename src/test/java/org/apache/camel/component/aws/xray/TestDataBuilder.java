@@ -17,7 +17,6 @@
 package org.apache.camel.component.aws.xray;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,15 +27,20 @@ import java.util.TreeSet;
 class TestDataBuilder {
 
   static class TestTrace {
+
+    private boolean randomOrder = false;
     private Set<TestSegment> segments = new TreeSet<>((TestSegment seg1, TestSegment seg2) -> {
-        if (seg1.startTime != 0 && seg2.startTime != 0) {
-          if (seg1.startTime == seg2.startTime) {
-            return 0;
-          }
-          return seg1.startTime < seg2.startTime ? -1 : 1;
-        } else {
-          return 1;
+      if (seg1.equals(seg2)) {
+        return 0;
+      }
+      if (seg1.startTime != 0 && seg2.startTime != 0) {
+        if (seg1.startTime == seg2.startTime) {
+          return -1;
         }
+        return seg1.startTime < seg2.startTime ? -1 : 1;
+      } else {
+        return 1;
+      }
     });
 
     public TestTrace withSegment(TestSegment segment) {
@@ -47,6 +51,15 @@ class TestDataBuilder {
     public Set<TestSegment> getSegments() {
       return segments;
     }
+
+    public TestTrace inRandomOrder() {
+      randomOrder = true;
+      return this;
+    }
+
+    public boolean isRandomOrder() {
+      return randomOrder;
+    }
   }
 
   public static abstract class TestEntity<T> {
@@ -54,6 +67,7 @@ class TestDataBuilder {
     protected Map<String, Object> annotations = new LinkedHashMap<>();
     protected Map<String, Map<String, Object>> metadata = new LinkedHashMap<>();
     protected List<TestSubsegment> subsegments = new ArrayList<>();
+    protected boolean randomOrder = false;
 
     protected TestEntity(String name) {
       this.name = name;
@@ -96,6 +110,60 @@ class TestDataBuilder {
     public T withSubsegment(TestSubsegment subsegment) {
       this.subsegments.add(subsegment);
       return (T)this;
+    }
+
+    public T inRandomOrder() {
+      this.randomOrder = true;
+      return (T)this;
+    }
+
+    public boolean isRandomOrder() {
+      return randomOrder;
+    }
+
+    @Override
+    public String toString() {
+      String ret = this.getClass().getSimpleName() + "(name: " + name;
+
+      if (!subsegments.isEmpty()) {
+        ret += ", subsegments: [";
+        StringBuilder sb = new StringBuilder();
+        for (TestSubsegment sub : subsegments) {
+          if (sb.length() > 0) {
+            sb.append(", ");
+          }
+          sb.append(sub);
+        }
+        ret += sb.toString()+"]";
+      }
+      if (!annotations.isEmpty()) {
+        ret += ", annotations: {";
+        StringBuilder sb = new StringBuilder();
+        for (String key:  annotations.keySet()) {
+          if (sb.length() > 0) {
+            sb.append(", ");
+          }
+          sb.append(key).append("->").append(annotations.get(key));
+        }
+        ret += sb.toString() + "}";
+      }
+      if (!metadata.isEmpty()) {
+        ret += ", metadata: {";
+        for (String namespace : metadata.keySet()) {
+          StringBuilder sb = new StringBuilder();
+          sb.append(namespace).append(": [");
+          for (String key : metadata.get(namespace).keySet()) {
+            if (sb.length() > 0) {
+              sb.append(", ");
+            }
+            sb.append(key).append("->").append(metadata.get(namespace).get(key));
+          }
+          sb.append("]");
+        }
+        ret += "}";
+      }
+      ret += ")";
+      return ret;
     }
   }
 

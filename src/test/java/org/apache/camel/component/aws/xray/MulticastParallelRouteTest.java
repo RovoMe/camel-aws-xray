@@ -19,24 +19,22 @@ package org.apache.camel.component.aws.xray;
 import org.apache.camel.builder.RouteBuilder;
 import org.junit.Test;
 
-public class ABCRouteTest extends CamelAwsXRayTestSupport {
+public class MulticastParallelRouteTest extends CamelAwsXRayTestSupport {
 
-  public ABCRouteTest() {
+  public MulticastParallelRouteTest() {
     super(
         TestDataBuilder.createTrace().inRandomOrder()
             .withSegment(TestDataBuilder.createSegment("start")
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_direct_a")
-                    .withSubsegment(TestDataBuilder.createSubsegment("a")
-                        .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_b"))
-                        .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_c"))
-                    )
-                )
+                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_a"))
+            )
+            .withSegment(TestDataBuilder.createSegment("a").inRandomOrder()
+                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_b"))
+                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_c"))
             )
             .withSegment(TestDataBuilder.createSegment("b"))
             .withSegment(TestDataBuilder.createSegment("c")
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_log_test"))
+                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_log_routing%20at%20$%7BrouteId%7D"))
             )
-            .withSegment(TestDataBuilder.createSegment("d"))
     );
   }
 
@@ -53,14 +51,13 @@ public class ABCRouteTest extends CamelAwsXRayTestSupport {
       @Override
       public void configure() throws Exception {
         from("direct:start").routeId("start")
-            .wireTap("seda:d")
-            .to("direct:a");
+            .to("seda:a");
 
-        from("direct:a").routeId("a")
+        from("seda:a").routeId("a")
             .log("routing at ${routeId}")
-            .to("seda:b")
-            .delay(2000)
-            .to("seda:c")
+            .multicast().parallelProcessing()
+              .to("seda:b", "seda:c")
+            .end()
             .log("End of routing");
 
         from("seda:b").routeId("b")
@@ -68,12 +65,8 @@ public class ABCRouteTest extends CamelAwsXRayTestSupport {
             .delay(simple("${random(1000,2000)}"));
 
         from("seda:c").routeId("c")
-            .to("log:test")
+            .to("log:routing at ${routeId}")
             .delay(simple("${random(0,100)}"));
-
-        from("seda:d").routeId("d")
-            .log("routing at ${routeId}")
-            .delay(simple("${random(10,50)}"));
       }
     };
   }

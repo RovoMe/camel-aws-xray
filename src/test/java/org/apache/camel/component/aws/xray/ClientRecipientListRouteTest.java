@@ -19,24 +19,19 @@ package org.apache.camel.component.aws.xray;
 import org.apache.camel.builder.RouteBuilder;
 import org.junit.Test;
 
-public class ABCRouteTest extends CamelAwsXRayTestSupport {
+public class ClientRecipientListRouteTest extends CamelAwsXRayTestSupport {
 
-  public ABCRouteTest() {
+  public ClientRecipientListRouteTest() {
     super(
         TestDataBuilder.createTrace().inRandomOrder()
             .withSegment(TestDataBuilder.createSegment("start")
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_direct_a")
-                    .withSubsegment(TestDataBuilder.createSubsegment("a")
-                        .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_b"))
-                        .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_c"))
-                    )
-                )
+                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_a"))
+                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_b"))
+                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_c"))
             )
+            .withSegment(TestDataBuilder.createSegment("a"))
             .withSegment(TestDataBuilder.createSegment("b"))
-            .withSegment(TestDataBuilder.createSegment("c")
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_log_test"))
-            )
-            .withSegment(TestDataBuilder.createSegment("d"))
+            .withSegment(TestDataBuilder.createSegment("c"))
     );
   }
 
@@ -53,27 +48,18 @@ public class ABCRouteTest extends CamelAwsXRayTestSupport {
       @Override
       public void configure() throws Exception {
         from("direct:start").routeId("start")
-            .wireTap("seda:d")
-            .to("direct:a");
+            .recipientList(constant("seda:a,seda:b,seda:c"));
 
-        from("direct:a").routeId("a")
-            .log("routing at ${routeId}")
-            .to("seda:b")
-            .delay(2000)
-            .to("seda:c")
-            .log("End of routing");
+        from("seda:a").routeId("a")
+            .log("routing at ${routeId}");
 
         from("seda:b").routeId("b")
             .log("routing at ${routeId}")
             .delay(simple("${random(1000,2000)}"));
 
         from("seda:c").routeId("c")
-            .to("log:test")
-            .delay(simple("${random(0,100)}"));
-
-        from("seda:d").routeId("d")
             .log("routing at ${routeId}")
-            .delay(simple("${random(10,50)}"));
+            .delay(simple("${random(0,100)}"));
       }
     };
   }

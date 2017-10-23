@@ -16,44 +16,48 @@
  */
 package org.apache.camel.component.aws.xray;
 
-import java.util.concurrent.TimeUnit;
-import org.apache.camel.builder.NotifyBuilder;
+import java.util.Collections;
+import java.util.Set;
+import org.apache.camel.RoutesBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.junit.Test;
 
-public class RouteConcurrentTest extends CamelAwsXRayTestSupport {
+public class TwoServiceWithExcludeTest extends CamelAwsXRayTestSupport {
 
-  public RouteConcurrentTest() {
+  public TwoServiceWithExcludeTest() {
     super(
         TestDataBuilder.createTrace().inRandomOrder()
-            .withSegment(TestDataBuilder.createSegment("foo"))
-            .withSegment(TestDataBuilder.createSegment("bar"))
+            .withSegment(TestDataBuilder.createSegment("ServiceA")
+                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_direct_ServiceB"))
+            )
     );
+  }
+
+  @Override
+  protected Set<String> getExcludePatterns() {
+    return Collections.singleton("ServiceB");
   }
 
   @Test
   public void testRoute() throws Exception {
-    NotifyBuilder notify = new NotifyBuilder(context).whenDone(2).create();
+    template.requestBody("direct:ServiceA", "Hello");
 
-    template.sendBody("seda:foo", "Hello World");
-
-    assertTrue(notify.matches(30, TimeUnit.SECONDS));
-
+    Thread.sleep(500);
     verify();
   }
 
   @Override
-  protected RouteBuilder createRouteBuilder() throws Exception {
+  protected RoutesBuilder createRouteBuilder() throws Exception {
     return new RouteBuilder() {
       @Override
       public void configure() throws Exception {
-        from("seda:foo?concurrentConsumers=5").routeId("foo")
-            .log("routing at ${routeId}")
+        from("direct:ServiceA").routeId("ServiceA")
+            .log("ServiceA has been called")
             .delay(simple("${random(1000,2000)}"))
-            .to("seda:bar");
+            .to("direct:ServiceB");
 
-        from("seda:bar?concurrentConsumers=5").routeId("bar")
-            .log("routing at ${routeId}")
+        from("direct:ServiceB").routeId("ServiceB")
+            .log("ServiceB has been called")
             .delay(simple("${random(0,500)}"));
       }
     };

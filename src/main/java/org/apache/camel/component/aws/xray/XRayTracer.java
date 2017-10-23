@@ -64,7 +64,10 @@ public class XRayTracer extends ServiceSupport implements RoutePolicyFactory, St
 
     private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** Header value kept in the message of the exchange **/
     public static final String XRAY_TRACE_ID = "Camel-AWS-XRay-Trace-ID";
+    /** Exchange property for passing a segment between threads **/
+    private static final String CURRENT_SEGMENT = "CAMEL_PROPERTY_AWS_XRAY_CURRENT_SEGMENT";
 
     private final XRayEventNotifier eventNotifier = new XRayEventNotifier();
     private CamelContext camelContext;
@@ -224,6 +227,15 @@ public class XRayTracer extends ServiceSupport implements RoutePolicyFactory, St
                     event.getClass().getSimpleName(), ese.getEndpoint(),
                     ese.getExchange().getFromRouteId());
 
+                if (Thread.currentThread().getName().contains("Multicast")) {
+                    // copy the segment from the exchange to the thread (local) context
+                    Segment segment = (Segment)ese.getExchange().getProperty(CURRENT_SEGMENT);
+                    LOG.trace("Copying over segment {}/{} from exchange received from {} to exchange processing {}",
+                        segment.getId(), segment.getName(), ese.getExchange().getFromEndpoint(),
+                        ese.getEndpoint());
+                    AWSXRay.setTraceEntity(segment);
+                }
+
                 if (AWSXRay.getCurrentSegmentOptional().isPresent()) {
                     String endpointName = ese.getEndpoint().getEndpointKey();
                     // AWS XRay does only allow a certain set of characters to appear within a name
@@ -306,6 +318,7 @@ public class XRayTracer extends ServiceSupport implements RoutePolicyFactory, St
                 segment.setTraceId(traceID);
                 LOG.trace("Created new XRay segment {} with name {}",
                     segment.getId(), segment.getName());
+                exchange.setProperty(CURRENT_SEGMENT, segment);
             } else {
                 Subsegment subsegment = AWSXRay.beginSubsegment(route.getId());
                 LOG.trace("Created new XRay subsegment {} with name {}",

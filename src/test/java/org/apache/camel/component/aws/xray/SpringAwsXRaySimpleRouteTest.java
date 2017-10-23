@@ -16,18 +16,25 @@
  */
 package org.apache.camel.component.aws.xray;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.camel.builder.NotifyBuilder;
+import org.apache.camel.component.aws.xray.TestDataBuilder.TestTrace;
 import org.apache.camel.test.spring.CamelSpringTestSupport;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class SpringAwsXRaySimpleRouteTest extends CamelSpringTestSupport {
 
+  @Rule
+  public FakeAWSDaemon socketListener = new FakeAWSDaemon();
+
   @Override
   protected AbstractApplicationContext createApplicationContext() {
-    return new ClassPathXmlApplicationContext("org/apache/camel/aws/xray/AwsXraySimpleRouteTest.xml");
+    return new ClassPathXmlApplicationContext("/org/apache/camel/aws/xray/AwsXRaySimpleRouteTest.xml");
   }
 
   @Test
@@ -39,5 +46,32 @@ public class SpringAwsXRaySimpleRouteTest extends CamelSpringTestSupport {
     }
 
     assertTrue(notify.matches(30, TimeUnit.SECONDS));
+
+    List<TestTrace> testData = Arrays.asList(
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            ),
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            ),
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            ),
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            ),
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            )
+    );
+
+    Thread.sleep(2000);
+
+    TestUtils.checkData(socketListener.getReceivedData(), testData);
   }
 }

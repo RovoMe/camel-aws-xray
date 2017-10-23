@@ -21,10 +21,22 @@ import org.apache.camel.builder.NotifyBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.junit.Test;
 
-public class RouteConcurrentTest extends CamelAwsXRayTestSupport {
+public class Route2ConcurrentTest extends CamelAwsXRayTestSupport {
 
-  public RouteConcurrentTest() {
+  public Route2ConcurrentTest() {
     super(
+        TestDataBuilder.createTrace().inRandomOrder()
+            .withSegment(TestDataBuilder.createSegment("foo"))
+            .withSegment(TestDataBuilder.createSegment("bar")),
+        TestDataBuilder.createTrace().inRandomOrder()
+            .withSegment(TestDataBuilder.createSegment("foo"))
+            .withSegment(TestDataBuilder.createSegment("bar")),
+        TestDataBuilder.createTrace().inRandomOrder()
+            .withSegment(TestDataBuilder.createSegment("foo"))
+            .withSegment(TestDataBuilder.createSegment("bar")),
+        TestDataBuilder.createTrace().inRandomOrder()
+            .withSegment(TestDataBuilder.createSegment("foo"))
+            .withSegment(TestDataBuilder.createSegment("bar")),
         TestDataBuilder.createTrace().inRandomOrder()
             .withSegment(TestDataBuilder.createSegment("foo"))
             .withSegment(TestDataBuilder.createSegment("bar"))
@@ -32,10 +44,12 @@ public class RouteConcurrentTest extends CamelAwsXRayTestSupport {
   }
 
   @Test
-  public void testRoute() throws Exception {
-    NotifyBuilder notify = new NotifyBuilder(context).whenDone(2).create();
+  public void testConcurrentInvocationsOfRoute() throws Exception {
+    NotifyBuilder notify = new NotifyBuilder(context).whenDone(10).create();
 
-    template.sendBody("seda:foo", "Hello World");
+    for (int i = 0; i < 5; i++) {
+      template.sendBody("seda:foo", "Hello World");
+    }
 
     assertTrue(notify.matches(30, TimeUnit.SECONDS));
 
