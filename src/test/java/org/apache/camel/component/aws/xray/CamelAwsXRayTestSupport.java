@@ -25,6 +25,7 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.aws.xray.TestDataBuilder.TestTrace;
 import org.apache.camel.processor.interceptor.Tracer;
+import org.apache.camel.spi.InterceptStrategy;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.junit.Rule;
 
@@ -63,11 +64,16 @@ public class CamelAwsXRayTestSupport extends CamelTestSupport {
 
     XRayTracer xRayTracer = new XRayTracer();
     xRayTracer.setCamelContext(context);
+    xRayTracer.setTracingStrategy(getTracingStrategy());
     xRayTracer.setExcludePatterns(getExcludePatterns());
 
     xRayTracer.init(context);
 
     return context;
+  }
+
+  protected InterceptStrategy getTracingStrategy() {
+    return new NoopTracingStrategy();
   }
 
   protected Set<String> getExcludePatterns() {

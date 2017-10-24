@@ -18,7 +18,6 @@ package org.apache.camel.component.aws.xray;
 
 import com.amazonaws.xray.AWSXRay;
 import com.amazonaws.xray.entities.Subsegment;
-import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
@@ -31,49 +30,29 @@ import org.slf4j.LoggerFactory;
 
 public class EIPTracingStrategy implements InterceptStrategy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    @Override
-    public Processor wrapProcessorInInterceptors(CamelContext camelContext,
-                                                 ProcessorDefinition<?> processorDefinition,
-                                                 Processor target, Processor nextTarget)
-        throws Exception {
+  @Override
+  public Processor wrapProcessorInInterceptors(CamelContext camelContext,
+      ProcessorDefinition<?> processorDefinition, Processor target, Processor nextTarget)
+      throws Exception {
 
-        Class<?> processorClass = processorDefinition.getClass();
+    String defName = processorDefinition.getShortName();
 
-        if (!processorClass.isAnnotationPresent(Trace.class)) {
-            LOG.trace("Either no bean or no bean with an @Trace annotation found. Skipping interception");
-            return new DelegateAsyncProcessor(target);
-        }
-
-        LOG.trace("Wrapping process definition {} of target bean {} in order for recording the EIP trace",
-                  processorDefinition, processorClass);
-
-        Annotation annotation = processorClass.getAnnotation(Trace.class);
-        Trace trace = (Trace)annotation;
-
-        String metricName = trace.metricName();
-
-        if ("".equals(metricName)) {
-            metricName = processorClass.getSimpleName();
-        }
-
-        final String name = metricName;
-
-        return new DelegateAsyncProcessor((Exchange exchange) -> {
-            LOG.trace("Creating new subsegment for {} - EIP {}", name, target);
-            Subsegment subsegment = AWSXRay.beginSubsegment(name);
-            try {
-                LOG.trace("Processing EIP {}", target);
-                target.process(exchange);
-            } catch (Exception ex) {
-                LOG.trace("Handling exception thrown by invoked EIP {}", target);
-                subsegment.addException(ex);
-                throw ex;
-            } finally {
-                LOG.trace("Closing down subsegment for {}", name);
-                subsegment.close();
-            }
-        });
-    }
+    return new DelegateAsyncProcessor((Exchange exchange) -> {
+      LOG.trace("Creating new subsegment for {} - EIP {}", defName, target);
+      Subsegment subsegment = AWSXRay.beginSubsegment(defName);
+      try {
+        LOG.trace("Processing EIP {}", target);
+        target.process(exchange);
+      } catch (Exception ex) {
+        LOG.trace("Handling exception thrown by invoked EIP {}", target);
+        subsegment.addException(ex);
+        throw ex;
+      } finally {
+        LOG.trace("Closing down subsegment for {}", defName);
+        subsegment.close();
+      }
+    });
+  }
 }
