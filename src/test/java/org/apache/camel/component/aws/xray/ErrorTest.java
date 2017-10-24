@@ -30,26 +30,21 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
+public class ErrorTest extends CamelAwsXRayTestSupport {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // FIXME: check why processors invoked in onRedelivery do not generate a subsegment
-  public ErrorHandlingTest() {
+  public ErrorTest() {
     super(
         TestDataBuilder.createTrace()
             .withSegment(TestDataBuilder.createSegment("start")
                 .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
-//                .withSubsegment(TestDataBuilder.createSubsegment("ExceptionRetryProcessor"))
                 .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
-//                .withSubsegment(TestDataBuilder.createSubsegment("ExceptionRetryProcessor"))
                 .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
-//                .withSubsegment(TestDataBuilder.createSubsegment("ExceptionRetryProcessor"))
                 .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_otherRoute"))
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_mock_end"))
+                .withSubsegment(TestDataBuilder.createSubsegment("ExceptionProcessor"))
             )
-            .withSegment(TestDataBuilder.createSegment("otherRoute"))
     );
   }
 
@@ -91,13 +86,7 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
 
   @Test
   public void testRoute() throws Exception {
-    MockEndpoint mockEndpoint = context.getEndpoint("mock:end", MockEndpoint.class);
-    mockEndpoint.expectedMessageCount(1);
-    mockEndpoint.expectedBodiesReceived("HELLO");
-
     template.requestBody("direct:start", "Hello");
-
-    mockEndpoint.assertIsSatisfied();
 
     verify();
   }
@@ -105,15 +94,9 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
   @Trace
   public static class TraceBean {
 
-    private static int COUNTER = 0;
     @Handler
     public String convertBodyToUpperCase(@Body String body) throws Exception {
-      String converted = body.toUpperCase();
-      if (COUNTER < 3) {
-        COUNTER++;
-        throw new Exception("test");
-      }
-      return converted;
+      throw new Exception("test");
     }
 
     @Override
