@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "unchecked"})
 class TestDataBuilder {
 
   static class TestTrace {
@@ -149,18 +149,23 @@ class TestDataBuilder {
       }
       if (!metadata.isEmpty()) {
         ret += ", metadata: {";
+        StringBuilder sb = new StringBuilder();
         for (String namespace : metadata.keySet()) {
-          StringBuilder sb = new StringBuilder();
+          if (sb.length() > 0) {
+            sb.append(", ");
+          }
           sb.append(namespace).append(": [");
+          boolean first = true;
           for (String key : metadata.get(namespace).keySet()) {
-            if (sb.length() > 0) {
+            if (!first) {
               sb.append(", ");
             }
             sb.append(key).append("->").append(metadata.get(namespace).get(key));
+            first = false;
           }
           sb.append("]");
         }
-        ret += "}";
+        ret += sb.toString() + "}";
       }
       ret += ")";
       return ret;

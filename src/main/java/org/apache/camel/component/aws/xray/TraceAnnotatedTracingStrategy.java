@@ -54,7 +54,8 @@ public class TraceAnnotatedTracingStrategy implements InterceptStrategy {
         }
 
         if (!processorClass.isAnnotationPresent(Trace.class)) {
-            LOG.trace("Either no bean or no bean with an @Trace annotation found. Skipping interception");
+            LOG.trace("{} does not contain an @Trace annotation. Skipping interception",
+                processorClass.getSimpleName());
             return new DelegateAsyncProcessor(target);
         }
 
