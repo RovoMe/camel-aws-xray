@@ -107,13 +107,18 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
 
     private static int COUNTER = 0;
     @Handler
-    public String convertBocyToUpperCase(@Body String body) throws Exception {
+    public String convertBodyToUpperCase(@Body String body) throws Exception {
       String converted = body.toUpperCase();
       if (COUNTER < 3) {
         COUNTER++;
         throw new Exception("test");
       }
       return converted;
+    }
+
+    @Override
+    public String toString() {
+      return "TraceBean";
     }
   }
 
@@ -125,6 +130,11 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
       LOG.debug("Processing caught exception {}", exchange.getException().getLocalizedMessage());
       exchange.getIn().getHeaders().put("HandledError", exchange.getException().getLocalizedMessage());
     }
+
+    @Override
+    public String toString() {
+      return "ExceptionProcessor";
+    }
   }
 
   @Trace
@@ -135,6 +145,11 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
       Exception ex = (Exception)exchange.getProperties().get(Exchange.EXCEPTION_CAUGHT);
       LOG.debug(">> Attempting redelivery of handled exception {} with message: {}",
           ex.getClass().getSimpleName(), ex.getLocalizedMessage());
+    }
+
+    @Override
+    public String toString() {
+      return "ExceptionRetryProcessor";
     }
   }
 }
