@@ -24,12 +24,12 @@ public class TwoServiceTest extends CamelAwsXRayTestSupport {
 
   public TwoServiceTest() {
     super(
-        TestDataBuilder.createTrace().inRandomOrder()
-            .withSegment(TestDataBuilder.createSegment("ServiceA")
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_direct_ServiceB")
-                    .withSubsegment(TestDataBuilder.createSubsegment("ServiceB"))
-                )
-            )
+            TestDataBuilder.createTrace().inRandomOrder()
+                    .withSegment(TestDataBuilder.createSegment("ServiceA")
+                            .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_direct_ServiceB")
+                                    .withSubsegment(TestDataBuilder.createSubsegment("ServiceB"))
+                            )
+                    )
     );
   }
 
@@ -47,13 +47,13 @@ public class TwoServiceTest extends CamelAwsXRayTestSupport {
       @Override
       public void configure() throws Exception {
         from("direct:ServiceA").routeId("ServiceA")
-            .log("ServiceA has been called")
-            .delay(simple("${random(1000,2000)}"))
-            .to("direct:ServiceB");
+                .log("ServiceA has been called")
+                .delay(simple("${random(1000,2000)}"))
+                .to("direct:ServiceB");
 
         from("direct:ServiceB").routeId("ServiceB")
-            .log("ServiceB has been called")
-            .delay(simple("${random(0,500)}"));
+                .log("ServiceB has been called")
+                .delay(simple("${random(0,500)}"));
       }
     };
   }

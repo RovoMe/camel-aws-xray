@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.aws.xray.TestDataBuilder.TestTrace;
@@ -29,13 +30,12 @@ import org.apache.camel.spi.InterceptStrategy;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.junit.Rule;
 
-
 public class CamelAwsXRayTestSupport extends CamelTestSupport {
-
-  private List<TestTrace> testData;
 
   @Rule
   public FakeAWSDaemon socketListener = new FakeAWSDaemon();
+
+  private List<TestTrace> testData;
 
   public CamelAwsXRayTestSupport(TestTrace... testData) {
     this.testData = Arrays.asList(testData);

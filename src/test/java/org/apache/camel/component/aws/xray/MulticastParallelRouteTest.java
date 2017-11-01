@@ -23,18 +23,18 @@ public class MulticastParallelRouteTest extends CamelAwsXRayTestSupport {
 
   public MulticastParallelRouteTest() {
     super(
-        TestDataBuilder.createTrace().inRandomOrder()
-            .withSegment(TestDataBuilder.createSegment("start")
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_a"))
-            )
-            .withSegment(TestDataBuilder.createSegment("a").inRandomOrder()
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_b"))
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_c"))
-            )
-            .withSegment(TestDataBuilder.createSegment("b"))
-            .withSegment(TestDataBuilder.createSegment("c")
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_log_routing%20at%20$%7BrouteId%7D"))
-            )
+            TestDataBuilder.createTrace().inRandomOrder()
+                    .withSegment(TestDataBuilder.createSegment("start")
+                            .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_a"))
+                    )
+                    .withSegment(TestDataBuilder.createSegment("a").inRandomOrder()
+                            .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_b"))
+                            .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_c"))
+                    )
+                    .withSegment(TestDataBuilder.createSegment("b"))
+                    .withSegment(TestDataBuilder.createSegment("c")
+                            .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_log_routing%20at%20$%7BrouteId%7D"))
+                    )
     );
   }
 
@@ -51,22 +51,22 @@ public class MulticastParallelRouteTest extends CamelAwsXRayTestSupport {
       @Override
       public void configure() throws Exception {
         from("direct:start").routeId("start")
-            .to("seda:a");
+                .to("seda:a");
 
         from("seda:a").routeId("a")
-            .log("routing at ${routeId}")
-            .multicast().parallelProcessing()
-              .to("seda:b", "seda:c")
-            .end()
-            .log("End of routing");
+                .log("routing at ${routeId}")
+                .multicast().parallelProcessing()
+                .to("seda:b", "seda:c")
+                .end()
+                .log("End of routing");
 
         from("seda:b").routeId("b")
-            .log("routing at ${routeId}")
-            .delay(simple("${random(1000,2000)}"));
+                .log("routing at ${routeId}")
+                .delay(simple("${random(1000,2000)}"));
 
         from("seda:c").routeId("c")
-            .to("log:routing at ${routeId}")
-            .delay(simple("${random(0,100)}"));
+                .to("log:routing at ${routeId}")
+                .delay(simple("${random(0,100)}"));
       }
     };
   }

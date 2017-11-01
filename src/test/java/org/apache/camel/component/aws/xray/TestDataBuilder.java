@@ -24,11 +24,15 @@ import java.util.Set;
 import java.util.TreeSet;
 
 @SuppressWarnings({"WeakerAccess", "unchecked"})
-class TestDataBuilder {
+final class TestDataBuilder {
+
+  private TestDataBuilder() {
+
+  }
 
   static class TestTrace {
 
-    private boolean randomOrder = false;
+    private boolean randomOrder;
     private Set<TestSegment> segments = new TreeSet<>((TestSegment seg1, TestSegment seg2) -> {
       if (seg1.equals(seg2)) {
         return 0;
@@ -62,12 +66,12 @@ class TestDataBuilder {
     }
   }
 
-  public static abstract class TestEntity<T> {
+  public abstract static class TestEntity<T> {
     protected String name;
     protected Map<String, Object> annotations = new LinkedHashMap<>();
     protected Map<String, Map<String, Object>> metadata = new LinkedHashMap<>();
     protected List<TestSubsegment> subsegments = new ArrayList<>();
-    protected boolean randomOrder = false;
+    protected boolean randomOrder;
 
     protected TestEntity(String name) {
       this.name = name;
@@ -91,7 +95,7 @@ class TestDataBuilder {
 
     public T withAnnotation(String name, Object value) {
       this.annotations.put(name, value);
-      return (T)this;
+      return (T) this;
     }
 
     public T withMetadata(String name, Object value) {
@@ -104,17 +108,17 @@ class TestDataBuilder {
       }
       Map<String, Object> namespaceMap = this.metadata.get(namespace);
       namespaceMap.put(name, value);
-      return (T)this;
+      return (T) this;
     }
 
     public T withSubsegment(TestSubsegment subsegment) {
       this.subsegments.add(subsegment);
-      return (T)this;
+      return (T) this;
     }
 
     public T inRandomOrder() {
       this.randomOrder = true;
-      return (T)this;
+      return (T) this;
     }
 
     public boolean isRandomOrder() {
@@ -134,12 +138,12 @@ class TestDataBuilder {
           }
           sb.append(sub);
         }
-        ret += sb.toString()+"]";
+        ret += sb.toString() + "]";
       }
       if (!annotations.isEmpty()) {
         ret += ", annotations: {";
         StringBuilder sb = new StringBuilder();
-        for (String key:  annotations.keySet()) {
+        for (String key : annotations.keySet()) {
           if (sb.length() > 0) {
             sb.append(", ");
           }

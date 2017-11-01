@@ -16,10 +16,10 @@
  */
 package org.apache.camel.component.aws.xray;
 
-import com.amazonaws.xray.AWSXRay;
-import com.amazonaws.xray.entities.Subsegment;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
+import com.amazonaws.xray.AWSXRay;
+import com.amazonaws.xray.entities.Subsegment;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -41,7 +41,7 @@ public class TraceAnnotatedTracingStrategy implements InterceptStrategy {
     public Processor wrapProcessorInInterceptors(CamelContext camelContext,
                                                  ProcessorDefinition<?> processorDefinition,
                                                  Processor target, Processor nextTarget)
-        throws Exception {
+            throws Exception {
 
         Class<?> processorClass = processorDefinition.getClass();
 
@@ -53,17 +53,17 @@ public class TraceAnnotatedTracingStrategy implements InterceptStrategy {
             processorClass = syncProcessor.getProcessor().getClass();
         }
 
-        if (!processorClass.isAnnotationPresent(Trace.class)) {
+        if (!processorClass.isAnnotationPresent(XRayTrace.class)) {
             LOG.trace("{} does not contain an @Trace annotation. Skipping interception",
-                processorClass.getSimpleName());
+                    processorClass.getSimpleName());
             return new DelegateAsyncProcessor(target);
         }
 
         LOG.trace("Wrapping process definition {} of target {} in order for recording its trace",
-                  processorDefinition, processorClass);
+                processorDefinition, processorClass);
 
-        Annotation annotation = processorClass.getAnnotation(Trace.class);
-        Trace trace = (Trace)annotation;
+        Annotation annotation = processorClass.getAnnotation(XRayTrace.class);
+        XRayTrace trace = (XRayTrace)annotation;
 
         String metricName = trace.metricName();
 

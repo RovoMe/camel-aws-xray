@@ -16,9 +16,9 @@
  */
 package org.apache.camel.component.aws.xray;
 
+import java.lang.invoke.MethodHandles;
 import com.amazonaws.xray.AWSXRay;
 import com.amazonaws.xray.entities.Subsegment;
-import java.lang.invoke.MethodHandles;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -34,8 +34,8 @@ public class EIPTracingStrategy implements InterceptStrategy {
 
   @Override
   public Processor wrapProcessorInInterceptors(CamelContext camelContext,
-      ProcessorDefinition<?> processorDefinition, Processor target, Processor nextTarget)
-      throws Exception {
+                                               ProcessorDefinition<?> processorDefinition, Processor target, Processor nextTarget)
+          throws Exception {
 
     String defName = processorDefinition.getShortName();
 

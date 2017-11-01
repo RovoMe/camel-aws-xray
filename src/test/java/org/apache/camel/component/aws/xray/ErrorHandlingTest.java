@@ -37,19 +37,19 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
   // FIXME: check why processors invoked in onRedelivery do not generate a subsegment
   public ErrorHandlingTest() {
     super(
-        TestDataBuilder.createTrace()
-            .withSegment(TestDataBuilder.createSegment("start")
-                .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
-//                .withSubsegment(TestDataBuilder.createSubsegment("ExceptionRetryProcessor"))
-                .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
-//                .withSubsegment(TestDataBuilder.createSubsegment("ExceptionRetryProcessor"))
-                .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
-//                .withSubsegment(TestDataBuilder.createSubsegment("ExceptionRetryProcessor"))
-                .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_otherRoute"))
-                .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_mock_end"))
-            )
-            .withSegment(TestDataBuilder.createSegment("otherRoute"))
+            TestDataBuilder.createTrace()
+                    .withSegment(TestDataBuilder.createSegment("start")
+                                    .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
+//                      .withSubsegment(TestDataBuilder.createSubsegment("ExceptionRetryProcessor"))
+                                    .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
+//                      .withSubsegment(TestDataBuilder.createSubsegment("ExceptionRetryProcessor"))
+                                    .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
+//                      .withSubsegment(TestDataBuilder.createSubsegment("ExceptionRetryProcessor"))
+                                    .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
+                                    .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_otherRoute"))
+                                    .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_mock_end"))
+                    )
+                    .withSegment(TestDataBuilder.createSegment("otherRoute"))
     );
   }
 
@@ -60,26 +60,26 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
       public void configure() throws Exception {
 
         onException(Exception.class)
-            .process(new ExceptionProcessor())
-            .maximumRedeliveries(3)
-              .redeliveryDelay(200)
-              .useExponentialBackOff()
+                .process(new ExceptionProcessor())
+                .maximumRedeliveries(3)
+                .redeliveryDelay(200)
+                .useExponentialBackOff()
                 .backOffMultiplier(1.5D)
-              .onRedelivery(new ExceptionRetryProcessor())
-            .handled(true)
-            .log(LoggingLevel.WARN, "Caught error while performing task. Reason: ${exception.message} Stacktrace: ${exception.stacktrace}")
-        .end();
+                .onRedelivery(new ExceptionRetryProcessor())
+                .handled(true)
+                .log(LoggingLevel.WARN, "Caught error while performing task. Reason: ${exception.message} Stacktrace: ${exception.stacktrace}")
+                .end();
 
         from("direct:start").routeId("start")
-            .log("start has been called")
-            .bean(TraceBean.class)
-            .delay(simple("${random(1000,2000)}"))
-            .to("seda:otherRoute")
-            .to("mock:end");
+                .log("start has been called")
+                .bean(TraceBean.class)
+                .delay(simple("${random(1000,2000)}"))
+                .to("seda:otherRoute")
+                .to("mock:end");
 
         from("seda:otherRoute").routeId("otherRoute")
-            .log("otherRoute has been called")
-            .delay(simple("${random(0,500)}"));
+                .log("otherRoute has been called")
+                .delay(simple("${random(0,500)}"));
       }
     };
   }
@@ -102,15 +102,16 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
     verify();
   }
 
-  @Trace
+  @XRayTrace
   public static class TraceBean {
 
-    private static int COUNTER = 0;
+    private static int counter;
+
     @Handler
     public String convertBodyToUpperCase(@Body String body) throws Exception {
       String converted = body.toUpperCase();
-      if (COUNTER < 3) {
-        COUNTER++;
+      if (counter < 3) {
+        counter++;
         throw new Exception("test");
       }
       return converted;
@@ -122,14 +123,14 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
     }
   }
 
-  @Trace
+  @XRayTrace
   public static class ExceptionProcessor implements Processor {
 
     @Override
     public void process(Exchange exchange) throws Exception {
       Exception ex = (Exception)exchange.getProperties().get(Exchange.EXCEPTION_CAUGHT);
       LOG.debug("Processing caught exception {}", ex.getLocalizedMessage());
-      exchange.getIn().getHeaders().put("HandledError",ex.getLocalizedMessage());
+      exchange.getIn().getHeaders().put("HandledError", ex.getLocalizedMessage());
     }
 
     @Override
@@ -138,14 +139,14 @@ public class ErrorHandlingTest extends CamelAwsXRayTestSupport {
     }
   }
 
-  @Trace
+  @XRayTrace
   public static class ExceptionRetryProcessor implements Processor {
 
     @Override
     public void process(Exchange exchange) throws Exception {
       Exception ex = (Exception)exchange.getProperties().get(Exchange.EXCEPTION_CAUGHT);
       LOG.debug(">> Attempting redelivery of handled exception {} with message: {}",
-          ex.getClass().getSimpleName(), ex.getLocalizedMessage());
+              ex.getClass().getSimpleName(), ex.getLocalizedMessage());
     }
 
     @Override

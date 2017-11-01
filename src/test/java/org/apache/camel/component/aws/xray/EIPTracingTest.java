@@ -31,26 +31,26 @@ public class EIPTracingTest extends CamelAwsXRayTestSupport {
 
   public EIPTracingTest() {
     super(
-        TestDataBuilder.createTrace()
-            .withSegment(TestDataBuilder.createSegment("start")
-                .withSubsegment(TestDataBuilder.createSubsegment("log"))
-                .withSubsegment(TestDataBuilder.createSubsegment("bean"))
-                .withSubsegment(TestDataBuilder.createSubsegment("delay")
-                    .withSubsegment(TestDataBuilder.createSubsegment("to")
-                        .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_otherRoute"))
+            TestDataBuilder.createTrace()
+                    .withSegment(TestDataBuilder.createSegment("start")
+                            .withSubsegment(TestDataBuilder.createSubsegment("log"))
+                            .withSubsegment(TestDataBuilder.createSubsegment("bean"))
+                            .withSubsegment(TestDataBuilder.createSubsegment("delay")
+                                    .withSubsegment(TestDataBuilder.createSubsegment("to")
+                                            .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_seda_otherRoute"))
+                                    )
+                                    .withSubsegment(TestDataBuilder.createSubsegment("to")
+                                            .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_mock_end"))
+                                    )
+                            )
+                            .withAnnotation("body", "HELLO")
+                            .withMetadata("originBody", "Hello")
                     )
-                    .withSubsegment(TestDataBuilder.createSubsegment("to")
-                        .withSubsegment(TestDataBuilder.createSubsegment("SendingTo_mock_end"))
+                    .withSegment(TestDataBuilder.createSegment("otherRoute")
+                            .withSubsegment(TestDataBuilder.createSubsegment("log"))
+                            .withSubsegment(TestDataBuilder.createSubsegment("process"))
+                            .withSubsegment(TestDataBuilder.createSubsegment("delay"))
                     )
-                )
-                .withAnnotation("body", "HELLO")
-                .withMetadata("originBody", "Hello")
-            )
-            .withSegment(TestDataBuilder.createSegment("otherRoute")
-                .withSubsegment(TestDataBuilder.createSubsegment("log"))
-                .withSubsegment(TestDataBuilder.createSubsegment("process"))
-                .withSubsegment(TestDataBuilder.createSubsegment("delay"))
-            )
     );
   }
 
@@ -79,21 +79,21 @@ public class EIPTracingTest extends CamelAwsXRayTestSupport {
       @Override
       public void configure() throws Exception {
         from("direct:start").routeId("start")
-            .log("start has been called")
-            .bean(TraceBean.class)
-            .delay(simple("${random(1000,2000)}"))
-            .to("seda:otherRoute")
-            .to("mock:end");
+                .log("start has been called")
+                .bean(TraceBean.class)
+                .delay(simple("${random(1000,2000)}"))
+                .to("seda:otherRoute")
+                .to("mock:end");
 
         from("seda:otherRoute").routeId("otherRoute")
-            .log("otherRoute has been called")
-            .process(new CustomProcessor())
-            .delay(simple("${random(0,500)}"));
+                .log("otherRoute has been called")
+                .process(new CustomProcessor())
+                .delay(simple("${random(0,500)}"));
       }
     };
   }
 
-  @Trace
+  @XRayTrace
   public static class TraceBean {
 
     @Handler
@@ -105,7 +105,7 @@ public class EIPTracingTest extends CamelAwsXRayTestSupport {
     }
   }
 
-  @Trace(metricName = "processor")
+  @XRayTrace(metricName = "processor")
   public static class CustomProcessor implements Processor {
 
     @Override
