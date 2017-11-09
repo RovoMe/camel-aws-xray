@@ -33,7 +33,8 @@ public class MulticastRouteTest extends CamelAwsXRayTestSupport {
                     )
                     .withSegment(TestDataBuilder.createSegment("b"))
                     .withSegment(TestDataBuilder.createSegment("c")
-                            .withSubsegment(TestDataBuilder.createSubsegment("log:routing%20at%20$%7BrouteId%7D"))
+                            // disabled by the LogSegmentDecorator (-> .to("log:..."); .log("...") is still working)
+                            // .withSubsegment(TestDataBuilder.createSubsegment("log:routing%20at%20$%7BrouteId%7D"))
                     )
     );
   }

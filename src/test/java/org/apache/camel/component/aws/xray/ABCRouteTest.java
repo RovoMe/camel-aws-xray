@@ -34,7 +34,8 @@ public class ABCRouteTest extends CamelAwsXRayTestSupport {
                     )
                     .withSegment(TestDataBuilder.createSegment("b"))
                     .withSegment(TestDataBuilder.createSegment("c")
-                            .withSubsegment(TestDataBuilder.createSubsegment("log:test"))
+                            // disabled by the LogSegmentDecorator (-> .to("log:..."); .log("...") is still working)
+                            // .withSubsegment(TestDataBuilder.createSubsegment("log:test"))
                     )
                     .withSegment(TestDataBuilder.createSegment("d"))
     );

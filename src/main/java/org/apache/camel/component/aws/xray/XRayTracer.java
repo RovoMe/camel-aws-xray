@@ -86,10 +86,15 @@ public class XRayTracer extends ServiceSupport implements RoutePolicyFactory, St
              // Add segment decorator only if no existing decorator for the component exists yet or if we have have a
              // derived one. This allows custom decorators to be added if they extend the standard decorators
              if (existing == null || existing.getClass().isInstance(d)) {
+                 LOG.trace("Adding segment decorator {}", d.getComponent());
                  decorators.put(d.getComponent(), d);
              }
          });
      }
+
+    public XRayTracer() {
+
+    }
 
     @Override
     public void setCamelContext(CamelContext camelContext) {
@@ -266,13 +271,13 @@ public class XRayTracer extends ServiceSupport implements RoutePolicyFactory, St
                 }
 
                 if (AWSXRay.getCurrentSegmentOptional().isPresent()) {
-//                    String endpointName = ese.getEndpoint().getEndpointKey();
-//                    // AWS XRay does only allow a certain set of characters to appear within a name
-//                    // Allowed characters: a-z, A-Z, 0-9, _, ., :, /, %, &, #, =, +, \, -, @
-//                    endpointName = endpointName.replaceAll("://", "_");
-//                    endpointName = endpointName.replaceAll("\\?", "&");
-//                    Subsegment subsegment = AWSXRay.beginSubsegment("SendingTo_" + endpointName);
-                    Subsegment subsegment = AWSXRay.beginSubsegment(sd.getOperationName(ese.getExchange(), ese.getEndpoint()));
+                    // AWS XRay does only allow a certain set of characters to appear within a name
+                    // Allowed characters: a-z, A-Z, 0-9, _, ., :, /, %, &, #, =, +, \, -, @
+                    String name = sd.getOperationName(ese.getExchange(), ese.getEndpoint());
+                    if (sd.getComponent() != null) {
+                        name = sd.getComponent() + ":" + name;
+                    }
+                    Subsegment subsegment = AWSXRay.beginSubsegment(name);
                     sd.pre(subsegment, ese.getExchange(), ese.getEndpoint());
                     LOG.trace("Creating new subsegment with ID {} and name {}",
                             subsegment.getId(), subsegment.getName());
