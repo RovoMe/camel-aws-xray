@@ -47,6 +47,6 @@ public class MongoDBSegmentDecorator extends AbstractSegmentDecorator{
         if (null != database) {
             segment.putMetadata("db.instance", database);
         }
-        segment.putSql("db.statement", queryParameters.toString());
+        segment.putMetadata("db.statement", queryParameters.toString());
     }
 }

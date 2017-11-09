@@ -47,11 +47,11 @@ public class CqlSegmentDecorator extends AbstractSegmentDecorator {
 
         Object cql = exchange.getIn().getHeader(CAMEL_CQL_QUERY);
         if (cql != null) {
-            segment.putSql("db.statement", cql);
+            segment.putMetadata("db.statement", cql);
         } else {
             Map<String, String> queryParameters = toQueryParameters(endpoint.getEndpointUri());
             if (queryParameters.containsKey("cql")) {
-                segment.putSql("db.statement", queryParameters.get("cql"));
+                segment.putMetadata("db.statement", queryParameters.get("cql"));
             }
         }
     }

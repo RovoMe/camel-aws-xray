@@ -16,9 +16,19 @@
  */
 package org.apache.camel.component.aws.xray.decorators;
 
+import java.net.URI;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import javax.sql.DataSource;
+
 import com.amazonaws.xray.entities.Entity;
+import com.amazonaws.xray.entities.Namespace;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
+import org.apache.camel.component.sql.SqlEndpoint;
 
 public class SqlSegmentDecorator extends AbstractSegmentDecorator {
 
@@ -33,11 +43,50 @@ public class SqlSegmentDecorator extends AbstractSegmentDecorator {
     public void pre(Entity segment, Exchange exchange, Endpoint endpoint) {
         super.pre(segment, exchange, endpoint);
 
-        segment.putMetadata("db.type", "sql");
+        segment.setNamespace(Namespace.REMOTE.toString());
+
+        String url = "unknown";
+        String user = "unknown";
+        String driverVersion = "unknown";
+        String dbType = "unknown";
+        String dbVersion = "unknown";
+
+        if (endpoint instanceof SqlEndpoint) {
+            try {
+                SqlEndpoint sqlEndpoint = (SqlEndpoint) endpoint;
+                if (null != sqlEndpoint.getJdbcTemplate()) {
+                    DataSource ds = sqlEndpoint.getJdbcTemplate().getDataSource();
+                    Connection con = ds.getConnection();
+                    DatabaseMetaData metaData = con.getMetaData();
+
+                    url = metaData.getURL();
+                    user = metaData.getUserName();
+                    driverVersion = metaData.getDriverVersion();
+                    dbType = metaData.getDatabaseProductName();
+                    dbVersion = metaData.getDatabaseProductVersion();
+                }
+            } catch (SQLException sqlEx) {
+                segment.addException(sqlEx);
+            }
+        }
+
+        Map<String, Object> additionalParams = new HashMap<>();
+        additionalParams.put("url", url);
+        additionalParams.put("user", user);
+        additionalParams.put("driver_version", driverVersion);
+        additionalParams.put("database_type", dbType);
+        additionalParams.put("database_version", dbVersion);
 
         Object sqlQuery = exchange.getIn().getHeader(CAMEL_SQL_QUERY);
-        if (sqlQuery instanceof String) {
-            segment.putSql("db.statement", sqlQuery);
+        if (sqlQuery != null && sqlQuery instanceof String) {
+            segment.putMetadata("query", sqlQuery);
+        } else {
+            URI uri = URI.create(endpoint.getEndpointUri());
+            String query = uri.getAuthority();
+            if (null != query) {
+                segment.putMetadata("query", query);
+            }
         }
+        segment.putAllSql(additionalParams);
     }
 }
