@@ -33,14 +33,14 @@ public class BeanTracingTest extends CamelAwsXRayTestSupport {
     super(
             TestDataBuilder.createTrace()
                     .withSegment(TestDataBuilder.createSegment("start")
-                            .withSubsegment(TestDataBuilder.createSubsegment("TraceBean"))
+                            .withSubsegment(TestDataBuilder.createSubsegment("bean:TraceBean"))
                             .withSubsegment(TestDataBuilder.createSubsegment("seda:otherRoute"))
                             .withSubsegment(TestDataBuilder.createSubsegment("mock:end"))
                             .withAnnotation("body", "HELLO")
                             .withMetadata("originBody", "Hello")
                     )
                     .withSegment(TestDataBuilder.createSegment("otherRoute")
-                            .withSubsegment(TestDataBuilder.createSubsegment("processor"))
+                            .withSubsegment(TestDataBuilder.createSubsegment("process:processor"))
                     )
     );
   }
@@ -88,7 +88,7 @@ public class BeanTracingTest extends CamelAwsXRayTestSupport {
   public static class TraceBean {
 
     @Handler
-    public String convertBocyToUpperCase(@Body String body) {
+    public String convertBodyToUpperCase(@Body String body) {
       String converted = body.toUpperCase();
       AWSXRay.getCurrentSegment().putAnnotation("body", converted);
       AWSXRay.getCurrentSegment().putMetadata("originBody", body);
