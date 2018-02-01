@@ -57,7 +57,7 @@ public class TraceAnnotatedTracingStrategy implements InterceptStrategy {
         }
 
         if (!processorClass.isAnnotationPresent(XRayTrace.class)) {
-            LOG.trace("{} does not contain an @Trace annotation. Skipping interception",
+            LOG.trace("{} does not contain an @XRayTrace annotation. Skipping interception",
                     processorClass.getSimpleName());
             return new DelegateAsyncProcessor(target);
         }
