@@ -16,12 +16,17 @@
  */
 package org.apache.camel.component.aws.xray;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+
 import com.amazonaws.xray.AWSXRay;
+import java.util.concurrent.TimeUnit;
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
 import org.apache.camel.Handler;
 import org.apache.camel.Processor;
 import org.apache.camel.RoutesBuilder;
+import org.apache.camel.builder.NotifyBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.spi.InterceptStrategy;
@@ -31,26 +36,26 @@ public class EIPTracingTest extends CamelAwsXRayTestSupport {
 
   public EIPTracingTest() {
     super(
-            TestDataBuilder.createTrace()
-                    .withSegment(TestDataBuilder.createSegment("start")
-                            .withSubsegment(TestDataBuilder.createSubsegment("log"))
-                            .withSubsegment(TestDataBuilder.createSubsegment("bean"))
-                            .withSubsegment(TestDataBuilder.createSubsegment("delay")
-                                    .withSubsegment(TestDataBuilder.createSubsegment("to")
-                                            .withSubsegment(TestDataBuilder.createSubsegment("seda:otherRoute"))
-                                    )
-                                    .withSubsegment(TestDataBuilder.createSubsegment("to")
-                                            .withSubsegment(TestDataBuilder.createSubsegment("mock:end"))
-                                    )
-                            )
-                            .withAnnotation("body", "HELLO")
-                            .withMetadata("originBody", "Hello")
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("start")
+                .withSubsegment(TestDataBuilder.createSubsegment("log"))
+                .withSubsegment(TestDataBuilder.createSubsegment("bean"))
+                .withSubsegment(TestDataBuilder.createSubsegment("delay")
+                    .withSubsegment(TestDataBuilder.createSubsegment("to")
+                        .withSubsegment(TestDataBuilder.createSubsegment("seda:otherRoute"))
                     )
-                    .withSegment(TestDataBuilder.createSegment("otherRoute")
-                            .withSubsegment(TestDataBuilder.createSubsegment("log"))
-                            .withSubsegment(TestDataBuilder.createSubsegment("process"))
-                            .withSubsegment(TestDataBuilder.createSubsegment("delay"))
+                    .withSubsegment(TestDataBuilder.createSubsegment("to")
+                        .withSubsegment(TestDataBuilder.createSubsegment("mock:end"))
                     )
+                )
+                .withAnnotation("body", "HELLO")
+                .withMetadata("originBody", "Hello")
+            )
+            .withSegment(TestDataBuilder.createSegment("otherRoute")
+                .withSubsegment(TestDataBuilder.createSubsegment("log"))
+                .withSubsegment(TestDataBuilder.createSubsegment("process"))
+                .withSubsegment(TestDataBuilder.createSubsegment("delay"))
+            )
     );
   }
 
@@ -61,12 +66,17 @@ public class EIPTracingTest extends CamelAwsXRayTestSupport {
 
   @Test
   public void testRoute() throws Exception {
+    NotifyBuilder notify = new NotifyBuilder(context).whenDone(2).create();
+
     MockEndpoint mockEndpoint = context.getEndpoint("mock:end", MockEndpoint.class);
     mockEndpoint.expectedMessageCount(1);
     mockEndpoint.expectedBodiesReceived("HELLO");
     mockEndpoint.expectedHeaderReceived("TEST", "done");
 
     template.requestBody("direct:start", "Hello");
+
+    assertThat("Not all exchanges were fully processed",
+        notify.matches(5, TimeUnit.SECONDS), is(equalTo(true)));
 
     mockEndpoint.assertIsSatisfied();
 
@@ -79,16 +89,16 @@ public class EIPTracingTest extends CamelAwsXRayTestSupport {
       @Override
       public void configure() throws Exception {
         from("direct:start").routeId("start")
-                .log("start has been called")
-                .bean(TraceBean.class)
-                .delay(simple("${random(1000,2000)}"))
-                .to("seda:otherRoute")
-                .to("mock:end");
+            .log("start has been called")
+            .bean(TraceBean.class)
+            .delay(simple("${random(1000,2000)}"))
+            .to("seda:otherRoute")
+            .to("mock:end");
 
         from("seda:otherRoute").routeId("otherRoute")
-                .log("otherRoute has been called")
-                .process(new CustomProcessor())
-                .delay(simple("${random(0,500)}"));
+            .log("otherRoute has been called")
+            .process(new CustomProcessor())
+            .delay(simple("${random(0,500)}"));
       }
     };
   }

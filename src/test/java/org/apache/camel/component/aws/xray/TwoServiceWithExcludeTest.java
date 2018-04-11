@@ -16,9 +16,14 @@
  */
 package org.apache.camel.component.aws.xray;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.camel.RoutesBuilder;
+import org.apache.camel.builder.NotifyBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.junit.Test;
 
@@ -26,10 +31,10 @@ public class TwoServiceWithExcludeTest extends CamelAwsXRayTestSupport {
 
   public TwoServiceWithExcludeTest() {
     super(
-            TestDataBuilder.createTrace().inRandomOrder()
-                    .withSegment(TestDataBuilder.createSegment("ServiceA")
-                            .withSubsegment(TestDataBuilder.createSubsegment("direct:ServiceB"))
-                    )
+        TestDataBuilder.createTrace().inRandomOrder()
+            .withSegment(TestDataBuilder.createSegment("ServiceA")
+                .withSubsegment(TestDataBuilder.createSubsegment("direct:ServiceB"))
+            )
     );
   }
 
@@ -40,9 +45,13 @@ public class TwoServiceWithExcludeTest extends CamelAwsXRayTestSupport {
 
   @Test
   public void testRoute() throws Exception {
+    NotifyBuilder notify = new NotifyBuilder(context).whenDone(1).create();
+
     template.requestBody("direct:ServiceA", "Hello");
 
-    Thread.sleep(500);
+    assertThat("Not all exchanges were fully processed",
+        notify.matches(10, TimeUnit.SECONDS), is(equalTo(true)));
+
     verify();
   }
 
@@ -52,13 +61,13 @@ public class TwoServiceWithExcludeTest extends CamelAwsXRayTestSupport {
       @Override
       public void configure() throws Exception {
         from("direct:ServiceA").routeId("ServiceA")
-                .log("ServiceA has been called")
-                .delay(simple("${random(1000,2000)}"))
-                .to("direct:ServiceB");
+            .log("ServiceA has been called")
+            .delay(simple("${random(1000,2000)}"))
+            .to("direct:ServiceB");
 
         from("direct:ServiceB").routeId("ServiceB")
-                .log("ServiceB has been called")
-                .delay(simple("${random(0,500)}"));
+            .log("ServiceB has been called")
+            .delay(simple("${random(0,500)}"));
       }
     };
   }

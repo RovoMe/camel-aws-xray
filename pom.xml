@@ -12,12 +12,12 @@
   <description>Distributed tracing using AWS XRay</description>
 
   <properties>
-    <aws-xray.version>1.2.0</aws-xray.version>
-    <camel.version>2.20.0</camel.version>
+    <aws-xray.version>1.3.1</aws-xray.version>
+    <camel.version>2.21.0</camel.version>
     <logback.version>1.1.9</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
 
-    <firstVersion>2.20.0</firstVersion>
+    <firstVersion>2.21.0</firstVersion>
     <label>monitoring,microservice</label>
     <title>XRay</title>
 

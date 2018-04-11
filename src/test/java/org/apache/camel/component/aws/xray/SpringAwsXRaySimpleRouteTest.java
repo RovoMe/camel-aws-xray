@@ -16,6 +16,9 @@
  */
 package org.apache.camel.component.aws.xray;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -29,49 +32,50 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class SpringAwsXRaySimpleRouteTest extends CamelSpringTestSupport {
 
-    @Rule
-    public FakeAWSDaemon socketListener = new FakeAWSDaemon();
+  @Rule
+  public FakeAWSDaemon socketListener = new FakeAWSDaemon();
 
-    @Override
-    protected AbstractApplicationContext createApplicationContext() {
-        return new ClassPathXmlApplicationContext("org/apache/camel/aws/xray/AwsXRaySimpleRouteTest.xml");
+  @Override
+  protected AbstractApplicationContext createApplicationContext() {
+    return new ClassPathXmlApplicationContext("org/apache/camel/aws/xray/AwsXRaySimpleRouteTest.xml");
+  }
+
+  @Test
+  public void testRoute() throws Exception {
+    NotifyBuilder notify = new NotifyBuilder(context).whenDone(5).create();
+
+    for (int i = 0; i < 5; i++) {
+      template.sendBody("seda:dude", "Hello World");
     }
 
-    @Test
-    public void testRoute() throws Exception {
-        NotifyBuilder notify = new NotifyBuilder(context).whenDone(5).create();
+    assertThat("Not all exchanges were fully processed",
+        notify.matches(30, TimeUnit.SECONDS), is(equalTo(true)));
 
-        for (int i = 0; i < 5; i++) {
-            template.sendBody("seda:dude", "Hello World");
-        }
+    List<TestTrace> testData = Arrays.asList(
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            ),
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            ),
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            ),
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            ),
+        TestDataBuilder.createTrace()
+            .withSegment(TestDataBuilder.createSegment("dude")
+                .withSubsegment(TestDataBuilder.createSubsegment("car"))
+            )
+    );
 
-        assertTrue(notify.matches(30, TimeUnit.SECONDS));
+    Thread.sleep(2000);
 
-        List<TestTrace> testData = Arrays.asList(
-                TestDataBuilder.createTrace()
-                        .withSegment(TestDataBuilder.createSegment("dude")
-                                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-                        ),
-                TestDataBuilder.createTrace()
-                        .withSegment(TestDataBuilder.createSegment("dude")
-                                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-                        ),
-                TestDataBuilder.createTrace()
-                        .withSegment(TestDataBuilder.createSegment("dude")
-                                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-                        ),
-                TestDataBuilder.createTrace()
-                        .withSegment(TestDataBuilder.createSegment("dude")
-                                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-                        ),
-                TestDataBuilder.createTrace()
-                        .withSegment(TestDataBuilder.createSegment("dude")
-                                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-                        )
-        );
-
-        Thread.sleep(2000);
-
-        TestUtils.checkData(socketListener.getReceivedData(), testData);
-    }
+    TestUtils.checkData(socketListener.getReceivedData(), testData);
+  }
 }

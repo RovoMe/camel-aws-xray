@@ -114,8 +114,8 @@ public class FakeAWSDaemon extends ExternalResource {
               LOG.trace("Processing received segment: {}", segment);
               if (!"".equals(segment)) {
                 if (!segment.endsWith("}")
-                        || StringUtils.countMatches(segment, "{") != StringUtils.countMatches(segment, "}")
-                        || StringUtils.countMatches(segment, "[") != StringUtils.countMatches(segment, "]")) {
+                    || StringUtils.countMatches(segment, "{") != StringUtils.countMatches(segment, "}")
+                    || StringUtils.countMatches(segment, "[") != StringUtils.countMatches(segment, "]")) {
                   LOG.trace("Skipping incomplete content: {}", segment);
                   continue;
                 }
@@ -142,7 +142,7 @@ public class FakeAWSDaemon extends ExternalResource {
               }
             }
             LOG.trace("Item {} received. JSON content: {}, Raw: {}",
-                    receivedTraces.size(), receivedTraces, raw);
+                receivedTraces.size(), receivedTraces, raw);
           } catch (Exception jsonEx) {
             LOG.warn("Could not convert segment " + locSegment + " to a Java object", jsonEx);
           }
